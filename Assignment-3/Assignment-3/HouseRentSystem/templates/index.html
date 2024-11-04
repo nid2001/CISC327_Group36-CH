@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Rent System</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding-top: 20px;
+        }
+        .sidebar button {
+            margin: 10px 20px;
+            padding: 10px;
+            text-align: left;
+            border: none;
+            background-color: #d3d3d3;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .sidebar button:hover {
+            background-color: #bbb;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <button onclick="navigateTo('chat')">Chat</button>
+        <button onclick="navigateTo('rentmanagement')">Rent Management</button>
+        <button onclick="navigateTo('report')">Maintenance</button>
+        <button onclick="navigateTo('myproperty')">My Property</button>
+        <button onclick="navigateTo('myaccount')">My Account</button>
+    </div>
+    <div class="content">
+        <h2>Welcome to the House Rent System</h2>
+        <p>Hello, {{ username }}!</p> <!-- Display the phone number here -->
+        <p>Click on the options on the left to access different features.</p>
+    </div>
+
+    <script>
+        const phone = "{{ phone }}";  // Get the phone number dynamically
+
+        function navigateTo(page) {
+            window.location.href = `/${phone}/${page}`;
+        }
+    </script>
+</body>
+</html>

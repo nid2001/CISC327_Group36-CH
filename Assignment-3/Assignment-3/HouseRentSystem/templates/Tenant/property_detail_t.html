@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Details</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Property Details</h2>
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">Type: {{ property.property_type }}</h5>
+                <h5 class="card-title">Address: {{ property.property_address }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">ZIP Code: {{ property.property_zip_code }}</h6>
+                <h6 class="card-subtitle mb-2 text-muted">Lease Term: {{ property.lease_term }}</h6>
+                <h6 class="card-subtitle mb-2 text-muted">Rent Rate: {{ property.rent_rate }}</h6>
+                <h6 class="card-subtitle mb-2 text-muted">Available Date: {{ property.available_date }}</h6>
+                <div class="card-text mt-4">
+                    <h6>Photos:</h6>
+                    {% if property.photos %}
+                        {% for photo in property.photos %}
+                            <img src="{{ url_for('static', filename='uploads/' ~ photo) }}" alt="Property Photo" class="img-thumbnail" style="width: 750px; margin: 5px;">
+                        {% endfor %}
+                    {% else %}
+                        <p>No photos available for this property.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Lease File Download Section -->
+                <div class="card-text mt-4">
+                    <h6>Lease Document:</h6>
+                    {% if property.lease %}
+                        <p>File: {{ property.original_lease_filename }}</p>
+                        <a href="{{ url_for('static', filename='lease/' ~ property.lease) }}" class="btn btn-primary" download>Download Lease</a>
+                    {% else %}
+                        <p>No lease document available for this property.</p>
+                    {% endif %}
+                </div>
+
+
+
+                <!-- Leave a Message Button -->
+                <button type="button" class="btn btn-success mt-3" data-toggle="modal" data-target="#messageModal">Leave a Message</button>
+            </div>
+        </div>
+        <a href="{{ url_for('rentnow_t', phone=session.get('phone')) }}" class="btn btn-secondary mt-3">Back to My Properties</a>
+    </div>
+
+    <!-- Message Modal -->
+    <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="messageModalLabel">Send a Message to the Landlord</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{{ url_for('send_message', property_id=property.id) }}" method="POST">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="message">Your Message</label>
+                            <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Send Message</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Rent System</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding-top: 20px;
+        }
+        .sidebar button {
+            margin: 10px 20px;
+            padding: 10px;
+            text-align: left;
+            border: none;
+            background-color: #d3d3d3;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .sidebar button:hover {
+            background-color: #bbb;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .property-card {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .property-img-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 75%; /* This maintains a 4:3 aspect ratio */
+            overflow: hidden;
+        }
+        .property-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures the image covers the container without distortion */
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <button onclick="navigateTo('mychat_t')">My Chat</button>
+        <button onclick="navigateTo('paymyrent_t')">Pay My Rent</button>
+        <button onclick="navigateTo('maintenance_t')">Maintenance</button>
+        <button onclick="navigateTo('rentnow_t')">Rent Now!</button>
+        <button onclick="navigateTo('myaccount')">My Account</button>
+    </div>
+    <div class="content">
+        <h2>Here are Available Properties:</h2>
+
+        <!-- Display property images and buttons for each property -->
+        {% if properties %}
+            <div class="row mt-4">
+                {% for property in properties %}
+                    <div class="col-md-4">
+                        <div class="property-card card">
+                            <!-- Display the first photo of the property if available -->
+                            <div class="property-img-wrapper">
+                                {% if property.photos and property.photos[0] %}
+                                    <img src="{{ url_for('static', filename='uploads/' + property.photos[0]) }}" class="property-img img-thumbnail" alt="Property Photo">
+                                {% else %}
+                                    <p>No image available</p>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <a href="{{ url_for('property_detail_t', phone=phone, property_id=property.id) }}" class="btn btn-info">{{ property.property_address }}</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No properties have been added yet.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        const phone = "{{ phone }}";  // Get the phone number dynamically
+
+        function navigateTo(page) {
+            window.location.href = `/${phone}/${page}`;
+        }
+    </script>
+</body>
+</html>
