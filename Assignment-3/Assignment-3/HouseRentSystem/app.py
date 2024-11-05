@@ -1,3 +1,5 @@
+# Rental Management System
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_socketio import SocketIO, send
 from werkzeug.utils import secure_filename
@@ -7,6 +9,15 @@ import uuid
 import os
 from flask_socketio import SocketIO, emit, join_room
 
+# Program documentation:
+# Overall Program Intention:
+# This Flask-based web application is designed to manage rental properties,
+# including landlord and tenant functionalities. Users can log in, register,
+# view/add/delete properties, chat, upload lease documents, and manage rent payments.
+# Input and Output Information:
+# - Input: User details, property information, chat messages, file uploads, etc.
+# - Output: HTML templates to display user dashboards, property information, etc.
+# - Run: Flask server is run to handle HTTP requests and render web pages.
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -55,6 +66,7 @@ def init_property_db():
     conn.commit()
     conn.close()
 
+
 def init_messages_db():
     conn = sqlite3.connect('rental_management.db')
     conn.execute("PRAGMA foreign_keys = ON")  # Enable foreign keys in SQLite
@@ -77,9 +89,9 @@ def init_messages_db():
     conn.close()
 
 
-# Initialize both tables
-init_db()  # Initialize users table
-init_property_db()  # Initialize properties table
+# Initialize tables
+init_db()
+init_property_db()
 init_messages_db()
 
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
@@ -111,11 +123,11 @@ def login():
             session['user_id'] = user[0]
             session['username'] = user[2]
             session['user_type'] = user[5]
-            session ['email'] = user[3]
+            session['email'] = user[3]
             session['phone'] = user[1]  # Save the user's phone number in the session
 
             return jsonify({'success': True, 'phone': user[1], 'username': user[2],
-                            'user_type': user[5],'email':user[3]})  # JSON response on successful login
+                            'user_type': user[5], 'email': user[3]})  # JSON response on successful login
         else:
             return jsonify(
                 {'success': False, 'message': 'Invalid username or password'})  # JSON response on failed login
@@ -138,7 +150,6 @@ def user_dashboard(phone):
     else:
         flash('Access denied or session expired. Please log in again.', 'error')
         return redirect(url_for('login'))
-
 
 
 # Registration route
@@ -191,10 +202,6 @@ def logout():
     return redirect(url_for('home'))
 
 
-
-
-
-
 # My Property route (Landlord only)
 @app.route('/<phone>/myproperty')
 def myproperty(phone):
@@ -226,7 +233,7 @@ def myproperty(phone):
         return redirect(url_for('home'))
 
 
-
+# let landlord add new property
 @app.route('/add_property', methods=['POST'])
 def add_property():
     if 'user_type' in session and session['user_type'] == 'landlord':
@@ -286,13 +293,12 @@ def add_property():
         return redirect(url_for('home'))
 
 
-
-
 # Function to check if the uploaded file type is allowed
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif','pdf'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 
 
+# let landlord check details of one property
 @app.route('/<phone>/property/<int:property_id>')
 def property_detail(phone, property_id):
     if 'user_type' in session and session['user_type'] == 'landlord' and session.get('phone') == phone:
@@ -316,8 +322,7 @@ def property_detail(phone, property_id):
                 'photos': property[8].split(',') if property[8] else [],
                 'available_status': property[10],
                 'lease': property[11],
-                'original_lease_filename':property[12]
-
+                'original_lease_filename': property[12]
 
             }
             return render_template('property_detail.html', property=property_dict)
@@ -328,8 +333,7 @@ def property_detail(phone, property_id):
         flash('Access denied. This page is for landlords only.', 'error')
         return redirect(url_for('home'))
 
-
-
+# let landlord delete exitsing property
 @app.route('/delete_property/<int:property_id>', methods=['POST'])
 def delete_property(property_id):
     if 'user_type' in session and session['user_type'] == 'landlord':
@@ -350,7 +354,7 @@ def delete_property(property_id):
                     if os.path.exists(photo_path):
                         os.remove(photo_path)
 
-            # Delete lease PDF from the upload folder if it exists
+                # Delete lease PDF from the upload folder if it exists
                 if property[11]:  # Assuming the lease PDF is stored in the 11th column (index 10)
                     lease_pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], property[11])
                     if os.path.exists(lease_pdf_path):
@@ -391,10 +395,7 @@ def rentmanagement(phone):
         return redirect(url_for('login'))
 
 
-
-
-
-# Chat route
+# Chat route for landlord
 @app.route('/<phone>/chat')
 def chat(phone):
     if 'user_type' in session and session['user_type'] == 'landlord' and session['phone'] == phone:
@@ -442,7 +443,7 @@ def chat(phone):
         flash('Access denied. This page is for landlords only.', 'error')
         return redirect(url_for('home'))
 
-
+# access to each chat history for landlord
 @app.route('/chat_detail/<int:property_id>/<tenant_phone>', methods=['GET'])
 def chat_detail(property_id, tenant_phone):
     if 'user_type' not in session:
@@ -478,7 +479,7 @@ def chat_detail(property_id, tenant_phone):
         ]
 
     return render_template('chat_detail.html', chat_history=chat_history, tenant_phone=tenant_phone,
-                           property_id=property_id, sender= sender, other_participant=other_participant)
+                           property_id=property_id, sender=sender, other_participant=other_participant)
 
 
 @socketio.on('join')
@@ -499,11 +500,6 @@ def handle_send_message(data):
     sender = session.get('username')  # The sender should be specified in the emitted data
     room = f"{landlord_phone}_{tenant_phone}_{data['property_id']}"
 
-
-
-
-
-
     # Save the message to the database
     with sqlite3.connect('rental_management.db') as conn:
         cursor = conn.cursor()
@@ -521,7 +517,6 @@ def handle_send_message(data):
         'sender': sender,  # Include the sender in the emitted data
         'timestamp': 'just now'
     }, room=room)
-
 
 
 # Configure the upload folder for PDFs
@@ -578,6 +573,7 @@ def mychat_t(phone):
         flash('Access denied. This page is for landlords only.', 'error')
         return redirect(url_for('home'))
 
+# tenant chat history
 @app.route('/mychat_detail_t/<int:property_id>/<landlord_phone>', methods=['GET'])
 def mychat_detail_t(property_id, landlord_phone):
     if 'user_type' not in session:
@@ -613,8 +609,7 @@ def mychat_detail_t(property_id, landlord_phone):
         ]
 
     return render_template('Tenant/mychat_detail_t.html', chat_history=chat_history, landlord_phone=landlord_phone,
-                           property_id=property_id, sender= sender, other_participant=other_participant)
-
+                           property_id=property_id, sender=sender, other_participant=other_participant)
 
 
 # SocketIO message handling
@@ -644,6 +639,7 @@ def upload_file():
 def uploaded_files():
     files = os.listdir(app.config['LEASE_UPLOAD_FOLDER'])
     return jsonify(files)
+
 
 # for tenant to leave message from property_detail_t
 @app.route('/send_message/<int:property_id>', methods=['POST'])
@@ -701,6 +697,7 @@ def paymyrent_t(phone):
         flash('Unauthorized access or session expired.', 'error')
         return redirect(url_for('login'))
 
+
 @app.route('/<phone>/maintenance_t')
 def maintenance_t(phone):
     if 'phone' in session and session['phone'] == phone:
@@ -710,6 +707,7 @@ def maintenance_t(phone):
         flash('Unauthorized access or session expired.', 'error')
         return redirect(url_for('login'))
 
+# available houses for tenants
 @app.route('/<phone>/rentnow_t')
 def rentnow_t(phone):
     if 'user_type' in session and session['user_type'] == 'tenant' and session.get('phone') == phone:
@@ -741,10 +739,7 @@ def rentnow_t(phone):
         flash('Unauthorized access or session expired.', 'error')
         return redirect(url_for('login'))
 
-
-
-
-
+# detail about available house
 @app.route('/<phone>/property_t/<int:property_id>')
 def property_detail_t(phone, property_id):
     if 'user_type' in session and session['user_type'] == 'tenant' and session.get('phone') == phone:
@@ -777,6 +772,7 @@ def property_detail_t(phone, property_id):
         flash('Access denied. This page is for tenants only.', 'error')
         return redirect(url_for('login'))
 
+# review account information and logout my account
 @app.route('/<phone>/myaccount')
 def myaccount(phone):
     if 'phone' in session and session['phone'] == phone:
@@ -794,11 +790,6 @@ def myaccount(phone):
     else:
         flash('Unauthorized access or session expired.', 'error')
         return redirect(url_for('login'))
-
-
-
-
-
 
 
 if __name__ == '__main__':
