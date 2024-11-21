@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Rent System</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding-top: 20px;
+        }
+        .sidebar button {
+            margin: 10px 20px;
+            padding: 10px;
+            text-align: left;
+            border: none;
+            background-color: #d3d3d3;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .sidebar button:hover {
+            background-color: #bbb;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ccc;
+        }
+        .modal-body {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .close {
+            cursor: pointer;
+            font-size: 1.5em;
+        }
+        .upload-list {
+            margin-top: 10px;
+            list-style: none;
+            padding: 0;
+        }
+        .upload-list li a {
+            text-decoration: none;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <button onclick="navigateTo('chat')" aria-label="Open Chat">Chat</button>
+        <button onclick="navigateTo('rentmanagement')" aria-label="Manage Rent">Rent Management</button>
+        <button onclick="navigateTo('report')" aria-label="View Report">Maintenance</button>
+        <button onclick="navigateTo('myproperty')">My Property</button>
+    </div>
+    <div class="content" id="main-content">
+        <h2>Welcome to the House Rent System</h2>
+        <p>Click on the options on the left to access different features.</p>
+    </div>
+
+    <div id="chatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Chat Box - Tenant ID: <span id="chatIdDisplay"></span></h5>
+                <span class="close" onclick="closeChatModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="chat-box"></div>
+            <div class="modal-footer">
+                <input id="chatMessage" type="text" placeholder="Enter your message" style="width: 80%;">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+            <div class="upload-section mt-3">
+                <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+                    <label for="fileUpload">Upload PDF:</label>
+                    <input id="fileUpload" type="file" name="file" accept=".pdf">
+                    <button type="submit">Upload</button>
+                </form>
+                <div id="uploadFeedback" class="mt-2"></div>
+                <ul id="uploadedFiles" class="upload-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="chatIdModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Enter Tenant ID</h5>
+                <span class="close" onclick="closeChatIdModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="number" id="chatIdInput" placeholder="10 Digit Max">
+                <button onclick="submitChatId()">Start Chat</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let chatId = '';
+
+        socket.on('message', (msg) => {
+            const chatBox = document.getElementById('chat-box');
+            const newMessage = document.createElement('div');
+            newMessage.textContent = msg;
+            chatBox.appendChild(newMessage);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+
+        function sendMessage() {
+            const msg = document.getElementById('chatMessage').value.trim();
+            if (msg) {
+                const chatBox = document.getElementById('chat-box');
+                const newMessage = document.createElement('div');
+                newMessage.textContent = 'You: ' + msg;
+                chatBox.appendChild(newMessage);
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                socket.send(msg);
+                document.getElementById('chatMessage').value = '';
+            }
+        }
+
+        window.onload = () => {
+            openChatIdModal();
+            loadUploadedFiles();
+        };
+
+        function openChatModal() {
+            document.getElementById('chatModal').style.display = 'flex';
+        }
+
+        function closeChatModal() {
+            document.getElementById('chatModal').style.display = 'none';
+        }
+
+        function openChatIdModal() {
+            document.getElementById('chatIdModal').style.display = 'flex';
+        }
+
+        function closeChatIdModal() {
+            document.getElementById('chatIdModal').style.display = 'none';
+        }
+
+        function submitChatId() {
+            const input = document.getElementById('chatIdInput').value.trim();
+            if (/^\d{1,10}$/.test(input)) {
+                chatId = input;
+                document.getElementById('chatIdDisplay').textContent = chatId;
+                closeChatIdModal();
+                openChatModal();
+            } else {
+                alert('Invalid Chat ID. It must be a number with up to 10 digits.');
+            }
+        }
+
+        function navigateTo(page) {
+            document.getElementById('main-content').innerHTML = `<h2>Loading ${page}...</h2>`;
+            setTimeout(() => {
+                window.location.href = '/' + page;
+            }, 500);
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('uploadFeedback').textContent = data;
+                loadUploadedFiles();  // Reload the uploaded files list
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function loadUploadedFiles() {
+            fetch('/uploaded-files')
+                .then(response => response.json())
+                .then(files => {
+                    const uploadedFiles = document.getElementById('uploadedFiles');
+                    uploadedFiles.innerHTML = '';
+                    files.forEach(file => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<a href="/static/lease/${file}" target="_blank">${file}</a>`;
+                        uploadedFiles.appendChild(li);
+                    });
+                })
+                .catch(error => console.error('Error loading files:', error));
+        }
+    </script>
+</body>
+</html>
