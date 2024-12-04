@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Detail</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <!-- Main chat area -->
+            <div class="col-md-8">
+                <h2>Chat with {{ landlord_phone }}</h2>
+
+
+                <div id="chat-messages" class="mt-4">
+                    {% for message in chat_history %}
+                        <div class="mb-3">
+                            <p><strong>
+                                {% if message.tenant_phone != session.phone %}
+                                    {{ landlord_phone }}
+                                {% elif message.sender == session.username %}
+                                    You
+                                {% else %}
+                                    {{ message.sender }}
+                                {% endif %}
+                            </strong>: {{ message.message }}</p>
+                            <p><small>Sent at: {{ message.timestamp }}</small></p>
+                            {% if message.pdf_filename %}
+                                <p><a href="{{ url_for('static', filename='lease/' ~ message.pdf_filename) }}" target="_blank">View Attachment</a></p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Message form -->
+                <form id="message-form" class="mt-4" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <textarea id="message-input" class="form-control" placeholder="Type your message..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="pdf-input">Attach PDF:</label>
+                        <input type="file" id="pdf-input" class="form-control-file" accept=".pdf">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+            </div>
+
+            <!-- Sidebar for PDF attachments -->
+            <div class="col-md-4">
+                <h3>All PDF Attachments</h3>
+                <ul class="list-group">
+                    {% for message in chat_history %}
+                        {% if message.pdf_filename %}
+                            <li class="list-group-item">
+                                <a href="{{ url_for('static', filename='lease/' ~ message.pdf_filename) }}" target="_blank">
+                                    {{ message.pdf_filename }}
+                                </a>
+                                <p>{{message.message}}</p>
+                                <p><small>Uploaded by: {{ message.sender }}</small></p>
+                                <p><small>{{ message.timestamp }}</small></p>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script type="text/javascript">
+
+        const tenantPhone = "{{ session.phone }}";
+        const landlordPhone = "{{ landlord_phone }}";
+        const propertyId = "{{ property_id }}";  // Ensure property_id is passed from the template context
+        const socket = io();
+
+        // Join the chat room with property_id
+        socket.emit('join', {tenant_phone: tenantPhone, landlord_phone: landlordPhone, property_id: propertyId});
+
+        // Handle receiving messages
+        socket.on('receive_message', function(data) {
+            const chatMessages = document.getElementById("chat-messages");
+            const newMessage = document.createElement("div");
+            newMessage.classList.add("mb-3");
+            const senderLabel = data.sender === landlordPhone ? 'You' : data.tenant_phone;
+            newMessage.innerHTML = `
+                <p><strong>${senderLabel}:</strong> ${data.message}</p>
+                <p><small>Sent at: ${data.timestamp}</small></p>
+                ${data.pdf_filename ? `<p><a href="/static/lease/${data.pdf_filename}" target="_blank">View Attachment</a></p>` : ''}
+            `;
+            chatMessages.appendChild(newMessage);
+
+            // Add new PDF to the sidebar if a PDF is attached
+            if (data.pdf_filename) {
+                const pdfList = document.querySelector('.list-group');
+                const newPdfItem = document.createElement('li');
+                newPdfItem.classList.add('list-group-item');
+                newPdfItem.innerHTML = `
+                    <a href="/static/lease/${data.pdf_filename}" target="_blank">${data.pdf_filename}</a>
+                    <p><small>Uploaded by: ${data.sender}</small></p>
+                `;
+                pdfList.appendChild(newPdfItem);
+            }
+        });
+
+        // Handle form submission
+        document.getElementById("message-form").onsubmit = async function(event) {
+            event.preventDefault();
+            const messageInput = document.getElementById("message-input");
+            const pdfInput = document.getElementById("pdf-input");
+            const message = messageInput.value;
+
+            if (message.trim() !== "" || pdfInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('message', message);
+                formData.append('tenant_phone', tenantPhone);
+                formData.append('landlord_phone', landlordPhone);
+                formData.append('property_id', propertyId);
+                if (pdfInput.files.length > 0) {
+                    formData.append('pdf', pdfInput.files[0]);
+                }
+
+                // Send the message data and PDF via an AJAX POST request
+                const response = await fetch('/upload_chat_t_pdf/' + propertyId + '/' + landlordPhone, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    socket.emit('send_message', {
+                        tenant_phone: tenantPhone,
+                        landlord_phone: landlordPhone,
+                        property_id: propertyId,
+                        message: message,
+                        sender: tenantPhone,
+                        pdf_filename: pdfInput.files.length > 0 ? pdfInput.files[0].name : null
+                    });
+                    messageInput.value = "";
+                    pdfInput.value = "";
+                } else {
+                    alert('Failed to send the message. Please try again.');
+                }
+            }
+        };
+    </script>
+</body>
+</html>

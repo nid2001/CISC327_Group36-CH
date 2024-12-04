@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Rent System</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding-top: 20px;
+        }
+        .sidebar button {
+            margin: 10px 20px;
+            padding: 10px;
+            text-align: left;
+            border: none;
+            background-color: #d3d3d3;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .sidebar button:hover {
+            background-color: #bbb;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <button onclick="navigateTo('chat')">My Chat</button>
+        <button onclick="navigateTo('rentmanagement')">Rent Management</button>
+        <button onclick="navigateTo('report')">Maintenance</button>
+        <button onclick="navigateTo('myproperty')">My Property</button>
+        <button onclick="navigateTo('myaccount')">My Account</button>
+    </div>
+    <div class="content">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="alert alert-success">
+                    {{ messages[0] }}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <h2>Here are your properties.</h2>
+
+
+        <!-- Display buttons for each property -->
+        {% if properties %}
+            <div class="mt-4">
+                {% for property in properties %}
+                    <button class="btn btn-info mb-3" onclick="navigateTo('property/{{ property.id }}')">{{ property.property_address }}</button>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No properties have been added yet.</p>
+        {% endif %}
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>Add New Property</h4>
+            </div>
+            <div class="card-body">
+                <form action="/add_property" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="propertyType">Property Type</label>
+<select class="form-control" id="propertyType" name="propertyType" required>
+    <option value="">Select Property Type</option>
+    <option value="Apartment">Apartment</option>
+    <option value="Commercial Property">Commercial Property</option>
+</select>
+                    </div>
+                    <div class="form-group">
+                        <label for="propertyAddress">Property Address</label>
+                        <input type="text" class="form-control" id="propertyAddress" name="propertyAddress" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="propertyZipCode">Property ZIP Code</label>
+                        <input type="text" class="form-control" id="propertyZipCode" name="propertyZipCode" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="leaseTerm">Lease Term</label>
+                        <input type="text" class="form-control" id="leaseTerm" name="leaseTerm" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="rentRate">Rent Rate(Monthly)</label>
+                        <input type="text" class="form-control" id="rentRate" name="rentRate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="availableDate">Available Date</label>
+                        <input type="date" class="form-control" id="availableDate" name="availableDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="propertyPhotos">Property Photos</label>
+                        <input type="file" class="form-control" id="propertyPhotos" name="propertyPhotos[]" accept="image/*" multiple>
+                    </div>
+                    <div class="form-group">
+                        <label for="lease">Property lease</label>
+                        <input type="file" class="form-control" id="lease" name="lease" accept="application/pdf"  required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Property</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const phone = "{{ phone }}";  // Get the phone number dynamically
+
+        function navigateTo(page) {
+            window.location.href = `/${phone}/${page}`;
+        }
+    </script>
+</body>
+</html>
